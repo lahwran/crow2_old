@@ -1,6 +1,8 @@
 Crow2
 -----
 
+IMPORTANT: this bot is NOT DONE YET. don't try to use it, it won't work!
+
 The new crow
 
 this bot is intended to replace skybot as the software running my bot crow on irc.esper.net. it is intended to be stable and as extensible as possible. It is mainly inspired by skybot (of course) and bukkit.
