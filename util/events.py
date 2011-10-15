@@ -89,21 +89,29 @@ class Hooks(object):
         if key in self._events:
             return self._events[key]
         else:
-            raise 
+            raise EventMissingError(key)
+
+    def _reset(self):
+        self._events = {}
 
     def create(self, name, caller = defaultcaller, deffilter = True, makereg = Registration, *filters):
         if name in self._events:
             raise Exception("event already has been created: "+name)
         self._events[name] = HandlerLists(caller, filters, deffilter, makereg)
+    
+    def _delete(self, name):
+        if name not in self._events:
+            raise EventMissingError(name)
+        del self._events[name]
 
 # this name seems too java-ey
-class EventMissingException:
+class EventMissingError(Exception):
     def __init__(self, name):
         self.name = name
     def __str__(self):
         return "Event %r Missing" % self.name
     def __repr__(self):
-        return "EventMissingException(%r)" % self.name
+        return "EventMissingError(%r)" % self.name
 
 # this object is what plugins will have available
 hook = Hooks()
@@ -221,6 +229,7 @@ for index in range(len(Order.lookup)):
     name = Order.lookup[index]
     Order.lookup[index] = Order(index, name)
     setattr(Order, name, Order.lookup[index])
+del name
 
 __can_create_order__ = False
 
