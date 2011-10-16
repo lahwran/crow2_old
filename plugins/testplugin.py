@@ -2,6 +2,10 @@
 
 from util import hook
 
-@hook.loaded
-def loaded():
+@hook.load
+def loaded(asdf):
     print "whee I was loaded"
+
+@hook.privmsg
+def privmsg(event):
+    print event

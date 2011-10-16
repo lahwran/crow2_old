@@ -54,7 +54,7 @@ import UserDict
 
 __all__ = ["hook", "Hooks", "HandlerLists", "Order",
             "EventMissingException", "defaultcaller",
-            "defaultfilter", "Event", "Registration"]
+            "defaultfilter", "Event", "Registration", "__can_register_system__"]
 
 def defaultcaller(registration, event):
     registration.func(event)
@@ -92,12 +92,16 @@ class Hooks(object):
             raise EventMissingError(key)
 
     def _reset(self):
-        self._events = {}
+        for item in self._events.items():
+            if not item[1]._system:
+                del self._events[item[0]]
 
-    def create(self, name, caller = defaultcaller, deffilter = True, makereg = Registration, *filters):
+    def create(self, name, caller = defaultcaller, makereg = Registration, *filters, **keywords):
         if name in self._events:
             raise Exception("event already has been created: "+name)
-        self._events[name] = HandlerLists(caller, filters, deffilter, makereg)
+        deffilter = keywords["deffilter"] if "deffilter" in keywords else True
+        system = keywords["system"] if "system" in keywords else False
+        self._events[name] = HandlerLists(caller, filters, deffilter, makereg, system)
     
     def _delete(self, name):
         if name not in self._events:
@@ -138,7 +142,7 @@ class CancellableEvent(Event):
 
 class HandlerLists(object):
 
-    def __init__(self, caller = defaultcaller, filters = (), deffilter = True, makereg = Registration):
+    def __init__(self, caller = defaultcaller, filters = (), deffilter = True, makereg = Registration, system=False):
         self._registrations = {}
         for position in Order.lookup:
             self._registrations[position] = []
@@ -147,6 +151,7 @@ class HandlerLists(object):
         self._filters = filters
         self._caller = caller
         self._makeregistration = makereg
+        self._system = system
 
     def __call__(self, *args, **keywords):
         "this is called as the hook.* decorators"

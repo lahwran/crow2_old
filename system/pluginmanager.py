@@ -19,7 +19,7 @@ class PluginManager(object):
 
         allfailed = False
         finalpass = False
-        
+
         # TODO FIXME should map all non-loaded plugins away so they're not importable
         # and should map loaded plugins so they're not loaded twice
         mapper = exocet.pep302Mapper
@@ -33,11 +33,13 @@ class PluginManager(object):
                     plugin = exocet.load(submodule, mapper)
                 except (ImportError, events.EventMissingError) as e:
                     if finalpass:
+                        print e
                         pass # TODO FIXME LOGGING VERY IMPORTANT
                         processed.add(submodule)
                     else:
                         pass # ignore it
                 except Exception as e:
+                    print e
                     pass # TODO FIXME LOGGING VERY IMPORTANT
                     processed.add(submodule)
 
@@ -55,20 +57,26 @@ class PluginManager(object):
     def unload(self):
         del self.plugins
 
-
+class Plugin(object):
+    def __init__(self):
+        pass #stuff happens here
 
 core = PluginManager("core")
 plugins = PluginManager("plugins")
 
-
 def loadall():
-    events.hook.create("loaded", caller = lambda reg, e: reg.func())
     core.load()
     plugins.load()
-    events.hook.loaded.fire(None)
+    #TODO FIXME need to give plugins access to the bot and such here
+    events.hook.load.fire(None)
 
 
 def unloadall():
+    #TODO FIXME does this need to have stuff
+    events.hook.unload.fire(None)
     core.unload()
     plugins.unload()
     events.hook._reset()
+
+events.hook.create("load", system = True)
+events.hook.create("unload", system = True)
