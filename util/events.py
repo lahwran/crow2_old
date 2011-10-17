@@ -202,10 +202,10 @@ class HandlerLists(object):
             for registration in self._registrations[position]:
                 if not self._checkfilters(registration, event):
                     continue
-                try:
-                    self._caller(registration, event)
-                except Exception as e:
-                    logger.exception(e)
+                #try:
+                self._caller(registration, event)
+                #except Exception as e:
+                #    logger.exception(e)
                 
 
 __can_create_order__ = True

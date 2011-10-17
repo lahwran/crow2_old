@@ -1,2 +1,5 @@
 *.pyc
 exocet/
+
+# don't ask
+______*
