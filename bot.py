@@ -1,12 +1,19 @@
 #!/usr/bin/python
 
-from system import pluginmanager, irc
+from system import eventlist, pluginmanager, irc
 from twisted.internet import reactor
+from util import hook, Event
+
+bot = irc.Client()
 
 pluginmanager.loadall()
+
+hook.startup.fire(Event(bot = bot))
+
 try:
     reactor.run()
 finally:
+    hook.shutdown.fire(Event(bot = bot))
     pluginmanager.unloadall()
 
 

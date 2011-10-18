@@ -52,6 +52,14 @@ except ImportError:
 import inspect
 import UserDict
 
+
+from util import misc
+
+#TODO: there is no cancel-handling at all (!)
+Order = misc.Enum("Order", "earliest", "early_ignorecancelled", "early", 
+      "default_ignorecancelled", "default", "late_ignorecancelled", "late",
+      "latest_ignorecancelled", "latest", "monitor")
+
 __all__ = ["hook", "Hooks", "HandlerLists", "Order",
             "EventMissingException", "defaultcaller",
             "defaultfilter", "Event", "Registration", "__can_register_system__"]
@@ -207,35 +215,3 @@ class HandlerLists(object):
                 #except Exception as e:
                 #    logger.exception(e)
                 
-
-__can_create_order__ = True
-
-class Order(object):
-
-    lookup = ["earliest", "early_ignorecancelled", "early", 
-      "default_ignorecancelled", "default", "late_ignorecancelled", "late",
-      "latest_ignorecancelled", "latest", "monitor"]
-
-    def __init__(self, index, name):
-        if not __can_create_order__:
-            raise Exception("Order initialization is already complete, use Order.whatever (see dir(Order))")
-        self.index = index
-        self.name = name
-
-    def __str__(self):
-        return self.name
-
-    def __repr__(self):
-        return "Order."+self.name
-
-
-
-for index in range(len(Order.lookup)):
-    name = Order.lookup[index]
-    Order.lookup[index] = Order(index, name)
-    setattr(Order, name, Order.lookup[index])
-del name
-
-__can_create_order__ = False
-
-
