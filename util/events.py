@@ -50,7 +50,6 @@ try:
 except ImportError:
     print "Could not import logger from crow2, will not log exceptions in event handlers!"
 import inspect
-import UserDict
 
 
 from util import misc
@@ -63,17 +62,6 @@ Order = misc.Enum("Order", "earliest", "early_ignorecancelled", "early",
 __all__ = ["hook", "Hooks", "HandlerLists", "Order",
             "EventMissingException", "defaultcaller",
             "defaultfilter", "Event", "Registration", "__can_register_system__"]
-
-def defaultcaller(registration, event):
-    registration.func(event)
-
-def defaultfilter(registration, event):
-    for key in registration.keywords:
-        if key not in event:
-            return False
-        if registration.keywords[key] != event[key]:
-            return False
-    return True
 
 class Registration(object):
     "registration data holder, should probably use a namedtuple for this"
@@ -104,7 +92,7 @@ class Hooks(object):
             if not item[1]._system:
                 del self._events[item[0]]
 
-    def create(self, name, caller = defaultcaller, makereg = Registration, *filters, **keywords):
+    def _create(self, name, makereg = Registration, **keywords):
         if name in self._events:
             raise Exception("event already has been created: "+name)
         deffilter = keywords["deffilter"] if "deffilter" in keywords else True
@@ -129,17 +117,35 @@ class EventMissingError(Exception):
 hook = Hooks()
 
 
-class Event(dict):
+class EventMetaclass(type):
+    "Metaclass used to prepare an event class with a hook slot"
+    def __new__(cls, classname, bases, classdict):
+        if classname != "Event": # don't want to operate on Event itself
+            
+        type.__new__(cld, classname, bases, classdict)
+
+class Event(object):
     "utility class intended for use as event objects"
-    def __getattr__(self, key):
-        if key in self.__dict__:
-            return self.__dict__[key]
-        return self.__getitem__(key)
-    def __setattr__(self, key, value):
-        if key in self.__dict__:
-            self.__dict__[key] = value
-        else:
-            self.__setitem__(key, value)
+    __metaclass__ = EventMetaclass
+
+    def _caller(self, registration):
+        "used to modify the call of the handler. most events can leave this alone"
+        registration.func(self)
+
+    def _filter(self, registration):
+        """
+        Filters are a succinct way to filter when the handler is called. they should check values in the
+        registration
+        """
+        for key in registration.keywords:
+            if key not in self.__dict__:
+                return False
+            if registration.keywords[key] != event.__dict__[key]:
+                return False
+        return True
+
+    @classmethod
+    def _makeregistration
 
 class CancellableEvent(Event):
     def __init__(self, *args, **keywords):

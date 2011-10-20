@@ -1,3 +1,7 @@
+"""
+A dropbox for uncategorized utility code that doesn't belong anywhere else.
+"""
+
 import warnings
 import inspect
 import functools

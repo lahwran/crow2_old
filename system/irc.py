@@ -112,8 +112,8 @@ class Connection(irc.IRCClient):
         self.isconnected = True
         self.isready = False
     
-    def connectionLost(self):
-        irc.IRCClient.connectionLost(self)
+    def connectionLost(self, reason):
+        irc.IRCClient.connectionLost(self, reason)
         self.isconnected = False
         self.isready = False
 

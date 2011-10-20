@@ -1,5 +1,7 @@
 *.pyc
 exocet/
 
+*.sublime*
+
 # don't ask
 ______*
