@@ -6,7 +6,6 @@ prepare.prepare()
 
 
 def main():
-
     try:
         from twisted.internet import reactor
     except ImportError:
@@ -26,12 +25,12 @@ def main():
 
     pluginmanager.loadall()
 
-    hook.startup.fire(Event(bot = bot))
+    hook.startup.fire(bot)
 
     try:
         reactor.run()
     finally:
-        hook.shutdown.fire(Event(bot = bot))
+        hook.shutdown.fire(bot)
         pluginmanager.unloadall()
 
 if __name__ == "__main__":

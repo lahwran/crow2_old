@@ -8,7 +8,7 @@ from twisted.internet import reactor, protocol
 from twisted.python import log
 from twisted.internet.protocol import ReconnectingClientFactory
 
-from util.events import hook, Event
+from util import hook, Event
 from util.misc import deprecated
 
 class Client(object):
@@ -118,11 +118,11 @@ class Connection(irc.IRCClient):
         self.isready = False
 
     def privmsg(self, user, channel, msg):
-        hook.privmsg.fire(Event(user=user, channel=channel, msg=msg))
+        hook.chat.fire(user, channel, msg)
 
     def signedOn(self):
         self.isready = True
-        hook.connect.fire(Event({"connection": self}))
+        hook.connect.fire(self)
 
 class Channel(object):
     def __init__(self, connection, name):

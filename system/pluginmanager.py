@@ -1,6 +1,6 @@
 
 import exocet
-from util import events
+from util import hook, Event
 
 from traceback import print_exc
 
@@ -131,15 +131,26 @@ def loadall():
     for manager in managers.values():
         manager.load()
     #TODO FIXME need to give plugins access to the bot and such here
-    events.hook.load.fire(None)
+    hook.load.fire()
 
 
 def unloadall():
     #TODO FIXME does this need to have stuff
-    events.hook.unload.fire(None)
+    hook.unload.fire()
     for manager in managers.values():
         manager.unload()
-    events.hook._reset()
+    hook._reset()
 
-events.hook.create("load", system = True)
-events.hook.create("unload", system = True)
+class LoadEvent(Event):
+    """
+    Fired just after plugins are loaded. First fire is before
+    StartupEvent, but is also fired on subsequent reloads.
+    """
+    _system = True
+
+class UnloadEvent(Event):
+    """
+    Fired just before plugins are unloaded. Last fire is just
+    after ShutdownEvent, but can be fired before that from reloads.
+    """
+    _system = True

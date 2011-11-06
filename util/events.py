@@ -55,13 +55,13 @@ import inspect
 from util import misc
 
 #TODO: there is no cancel-handling at all (!)
-Order = misc.Enum("Order", "earliest", "early_ignorecancelled", "early", 
-      "default_ignorecancelled", "default", "late_ignorecancelled", "late",
-      "latest_ignorecancelled", "latest", "monitor")
+Order = misc.Enum("Order",
+                  "earliest", "early_ignorecancelled", "early", 
+                  "default_ignorecancelled", "default", "late_ignorecancelled", "late",
+                  "latest_ignorecancelled", "latest", "monitor")
 
-__all__ = ["hook", "Hooks", "HandlerLists", "Order",
-            "EventMissingException", "defaultcaller",
-            "defaultfilter", "Event", "Registration", "__can_register_system__"]
+__all__ = ["main_hooks", "Hooks", "HandlerLists", "Order",
+            "EventMissingException", "Event", "Registration"]
 
 class Registration(object):
     "registration data holder, should probably use a namedtuple for this"
@@ -79,25 +79,37 @@ class Hooks(object):
 
     def __init__(self):
         self._events = {}
+        self._systemevents = {}
 
     # make dict keys accessible as attributes
     def __getattr__(self, key):
-        if key in self._events:
+        return self._getevent(key)
+
+    def _reset(self):
+        self._events = {}
+
+    def _getevent(self, key):
+        if key in self._systemevents:
+            return self._systemevents[key]
+        elif key in self._events:
             return self._events[key]
         else:
             raise EventMissingError(key)
 
-    def _reset(self):
-        for item in self._events.items():
-            if not item[1]._system:
-                del self._events[item[0]]
+    def _event_exists(self, key):
+        try:
+            self._getevent(key)
+            return True
+        except EventMissingError:
+            return False
 
-    def _create(self, name, makereg = Registration, **keywords):
-        if name in self._events:
-            raise Exception("event already has been created: "+name)
-        deffilter = keywords["deffilter"] if "deffilter" in keywords else True
-        system = keywords["system"] if "system" in keywords else False
-        self._events[name] = HandlerLists(caller, filters, deffilter, makereg, system)
+    def _create(self, name, cls, system=False):
+        if self._event_exists(name):
+            raise Exception("event already has been created: "+name+" (attempted class: %s)" % repr(cls))
+        if system:
+            self._systemevents[name] = HandlerList(cls)
+        else:
+            self._events[name] = HandlerList(cls)
     
     def _delete(self, name):
         if name not in self._events:
@@ -113,29 +125,46 @@ class EventMissingError(Exception):
     def __repr__(self):
         return "EventMissingError(%r)" % self.name
 
+
 # this object is what plugins will have available
-hook = Hooks()
+main_hooks = Hooks()
 
 
 class EventMetaclass(type):
-    "Metaclass used to prepare an event class with a hook slot"
-    def __new__(cls, classname, bases, classdict):
-        if classname != "Event": # don't want to operate on Event itself
-            
-        type.__new__(cld, classname, bases, classdict)
+    """
+    Metaclass used to prepare an event class with a hook slot
+    shouldn't be a metaclass, probably - perhaps a class decorator
+    """
+    def __init__(cls, name, bases, classdict):
+        type.__init__(cls, name, bases, classdict)
+        if classdict.get("_register", True):
+            hooks = classdict.get("_hooks", main_hooks)
+
+            defaultname = name.lower().replace("event", "")
+            hookname = classdict.get("hookname", defaultname)
+
+            system = classdict.get("_system", False)
+            hooks._create(hookname, cls, system)
+
+
 
 class Event(object):
-    "utility class intended for use as event objects"
+    """
+    Event superclass
+    """
     __metaclass__ = EventMetaclass
+    _register = False
 
     def _caller(self, registration):
-        "used to modify the call of the handler. most events can leave this alone"
+        """
+        used to modify the call of the handler. most events can leave this alone
+        """
         registration.func(self)
 
     def _filter(self, registration):
         """
         Filters are a succinct way to filter when the handler is called. they should check values in the
-        registration
+        registration and return false if the registration does not match the call.
         """
         for key in registration.keywords:
             if key not in self.__dict__:
@@ -145,27 +174,40 @@ class Event(object):
         return True
 
     @classmethod
-    def _makeregistration
+    def _makeregistration(self, func, *args, **keywords):
+        """
+        create an object to be used as a registration.
+        this object must have a position attribute containing an element of the Order enum.
+        """
+        return Registration(func, args, keywords)
+
 
 class CancellableEvent(Event):
-    def __init__(self, *args, **keywords):
-        Event.__init__(self, *args, **keywords)
-        self.cancelled = False
+    """
+    A cancellable event.
+    """
+    _register = False
+    cancelled = False
+
     def cancel(self):
         self.cancelled = True
 
-class HandlerLists(object):
+    @classmethod
+    def iscancellable(cls, position):
+        return position.index % 2 == 0
 
-    def __init__(self, caller = defaultcaller, filters = (), deffilter = True, makereg = Registration, system=False):
+    def _filter(self, registration):
+        if self.cancelled and self.iscancellable(registration.position):
+            return False
+        return super(CancellableEvent, self)._filter(registration)
+
+class HandlerList(object):
+
+    def __init__(self, eventclass):
         self._registrations = {}
         for position in Order.lookup:
             self._registrations[position] = []
-        if deffilter:
-            filters = (defaultfilter, ) + filters
-        self._filters = filters
-        self._caller = caller
-        self._makeregistration = makereg
-        self._system = system
+        self._eventclass = eventclass
 
     def __call__(self, *args, **keywords):
         "this is called as the hook.* decorators"
@@ -186,7 +228,7 @@ class HandlerLists(object):
 
     def register(self, thefunc, args=(), keywords={}):
         "register a handler"
-        registration = Registration(thefunc, args, keywords)
+        registration = self._eventclass._makeregistration(thefunc, *args, **keywords)
         self._registrations[registration.position].append(registration)
 
     def unregister(self, thefunc, args=(), keywords={}):
@@ -202,22 +244,28 @@ class HandlerLists(object):
                 if registration.keywords != keywords:
                     continue
                 self.registrations[position].remove(registration)
-        
 
-    def _checkfilters(self, registration, event):
-        for filter in self._filters:
-            if not filter(registration, event):
-                return False
-        return True
+    def fire(self, *args, **keywords):
+        """
+        Fire an event with the provided arguments. Arguments are passed to the __init__ of the
+        bound event class that was used to create this handler list, and the created object is returned
+        after calling handlers.
+        """
+        try:
+            event = self._eventclass(*args, **keywords)
+        except TypeError as e:
+            if "object.__new__()" in e.message:
+                raise TypeError("%s - did you call your event constructor with incorrect parameters?" % e.message)
+            else:
+                raise
+        self._call(event)
+        return event
 
-    def fire(self, event):
-        "actually fire an event"
+    def _call(self, event):
+        "actually fire an event. does not create the event for you"
         for position in Order.lookup:
             for registration in self._registrations[position]:
-                if not self._checkfilters(registration, event):
+                if not event._filter(registration):
                     continue
-                #try:
-                self._caller(registration, event)
-                #except Exception as e:
-                #    logger.exception(e)
-                
+                event._caller(registration)
+                # needs exception handling

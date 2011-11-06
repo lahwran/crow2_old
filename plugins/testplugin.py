@@ -8,8 +8,8 @@ from util import hook
 
 @hook.connect
 def onconnect(event):
-    event.connection.join("##crow2")
+    event.conn.join("##crow2")
 
-@hook.privmsg
+@hook.chat
 def privmsg(event):
-    print "{channel} <{user}> {msg}".format(**event)
+    print "{channel} <{user}> {message}".format(**event.__dict__)
