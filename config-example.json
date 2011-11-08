@@ -1,0 +1,19 @@
+# template json config file
+# rename to config.json and remove these comments to use
+{
+    "servers":
+    {
+        "crow2":
+        {
+            "address": "localhost",
+            "port": 6667,
+            "nick": "crow2",
+            "user": "crow",
+            "realname": "Crow2 IRC bot - http://github.com/lahwran/crow2",
+            "channels":
+            [
+                "##crow2"
+            ]
+        }
+    }
+}

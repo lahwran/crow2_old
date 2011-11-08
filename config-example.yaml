@@ -1,12 +1,14 @@
 # template yaml config file
-# rename to config.yml to use
+# rename to config.yaml to use
 # requires a yaml module to be installed
 # see http://pyyaml.org/
 
 servers:
     crow2:
-        address: irc.esper.net
+        address: localhost
         port: 6667
         nick: crow2
+        user: crow
+        realname: Crow2 IRC bot - http://github.com/lahwran/crow2
         channels:
             - '##crow2'
