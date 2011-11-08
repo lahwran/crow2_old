@@ -27,21 +27,27 @@ def google(event):
 
 examples of calling an event:
 
-event = whatever
-hook.command.handlers(event)
+hook.command.fire("command")
 
 events must be prepared in the hook object, like this:
 
-hook.create("privmsg")
+class PrivmsgEvent(Event):
+    '''
+    Your docstring here
+    '''
 
-def command_filter(func, name=None, *args, **keywords):
-    if not name:
-        name = func.func_name
-    def filter(event):
-        return event.command == name
-    return filter
+class CommandEvent(Event):
+    '''
+    Your docstring here
+    '''
 
-hook.create("command", command_filter)
+    def __init__(self, commandname):
+        self.commandname = commandname
+
+    @classmethod
+    def _makeregistration(self, func, *args, **keywords):
+        #alter keywords as fit
+        return super(CommandEvent, self)._makeregistration(self, func, *args, **keywords)
 
 """
 
@@ -54,7 +60,6 @@ import inspect
 
 from util import misc
 
-#TODO: there is no cancel-handling at all (!)
 Order = misc.Enum("Order",
                   "earliest", "early_ignorecancelled", "early", 
                   "default_ignorecancelled", "default", "late_ignorecancelled", "late",
@@ -62,17 +67,6 @@ Order = misc.Enum("Order",
 
 __all__ = ["main_hooks", "Hooks", "HandlerLists", "Order",
             "EventMissingException", "Event", "Registration"]
-
-class Registration(object):
-    "registration data holder, should probably use a namedtuple for this"
-    def __init__(self, thefunc, args, keywords):
-        self.position = Order.default
-        if "position" in keywords:
-            position = keywords["position"]
-            del keywords["position"]
-        self.args = args
-        self.keywords = keywords
-        self.func = thefunc
 
 
 class Hooks(object):
@@ -147,7 +141,6 @@ class EventMetaclass(type):
             hooks._create(hookname, cls, system)
 
 
-
 class Event(object):
     """
     Event superclass
@@ -180,6 +173,18 @@ class Event(object):
         this object must have a position attribute containing an element of the Order enum.
         """
         return Registration(func, args, keywords)
+
+
+class Registration(object):
+    "registration data holder, should probably use a namedtuple for this"
+    def __init__(self, thefunc, args, keywords):
+        self.position = Order.default
+        if "position" in keywords:
+            position = keywords["position"]
+            del keywords["position"]
+        self.args = args
+        self.keywords = keywords
+        self.func = thefunc
 
 
 class CancellableEvent(Event):
