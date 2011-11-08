@@ -6,9 +6,9 @@ from util import hook
 #def loaded(asdf):
 #    print "whee I was loaded"
 
-@hook.connect
-def onconnect(event):
-    event.conn.join("##crow2")
+#@hook.connect
+#def onconnect(event):
+#    event.conn.join("##crow2")
 
 @hook.chat
 def privmsg(event):

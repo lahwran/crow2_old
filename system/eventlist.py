@@ -10,6 +10,7 @@ class ConnectEvent(Event):
 
     def __init__(self, conn):
         self.conn = conn
+        self.server = conn.server
 
 
 class ChatEvent(Event):

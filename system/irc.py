@@ -17,13 +17,13 @@ class Client(object):
         self.servers = {}
 
 class Server(object):
-    def __init__(self, address, port, nickname, username, realname, password, config):
-        self.address = address
-        self.port = port
-        self.nickname = nickname
-        self.username = username
-        self.realname = realname
-        self.password = password
+    def __init__(self, **config):
+        self.address = config["address"]
+        self.port = config.get("port", 6667)
+        self.nickname = config["nick"]
+        self.username = config.get("user", self.nickname)
+        self.realname = config.get("realname", self.username)
+        self.password = config.get("password")
         self.config = config
 
         self.connecting = False
@@ -67,8 +67,6 @@ class Server(object):
         self._connector = None
         self._connfactory = None
         self.connecting = False
-
-
 
 
 #this really should be part of Server, not a separate class ...
