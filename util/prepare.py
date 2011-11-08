@@ -27,6 +27,9 @@ def prepare_exocet():
     os.unlink(temploc)
     print "Done downloading exocet"
 
+def prepare_twisted():
+    print "gimme twisted :<"
+
 def prepare():
     try:
         import exocet
@@ -37,3 +40,4 @@ def prepare():
         import twisted
     except ImportError:
         prepare_twisted()
+        raise
