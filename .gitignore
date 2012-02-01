@@ -1,0 +1,9 @@
+*.pyc
+exocet/
+
+*.sublime*
+
+# don't ask
+______*
+
+config.*
