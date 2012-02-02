@@ -1,6 +1,7 @@
 import imp
 import os
 import sys
+import pprint
 
 from twisted.python.reflect import namedModule
 
@@ -23,11 +24,11 @@ class PackageLoader(object):
 
     def load(self):
         if self.loaded:
-            raise AlreadyLoadedError(self.package)
+            raise AlreadyLoadedError(repr(self))
         self.plugins = []
-        names = listpackage(repr(self))
+        names = listpackage(self.package)
         for name in names:
-            plugin = namedModule(parent, name)
+            plugin = namedModule(self.package + "." + name)
             self.plugins.append(plugin)
         self.loaded = True
         # that was easy
@@ -35,7 +36,7 @@ class PackageLoader(object):
     def unload(self):
         if not self.loaded:
             raise NotLoadedError(repr(self))
-        for name in sys.modules:
+        for name in dict(sys.modules):
             if name.startswith(self.package+".") or name == self.package:
                 del sys.modules[name]
         self.plugins = []
@@ -75,7 +76,6 @@ def listpackage(name):
             modulename = getmodulename(package_path, filename)
             if not modulename or modulename == "__init__":
                 continue
-            print filename, modulename
             results.add(modulename)
 
     return results
